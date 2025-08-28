@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* App shell backgrounds for light/dark */
+html {
+  @apply bg-white text-gray-900;
+}
+html.dark {
+  @apply bg-neutral-900 text-neutral-100;
+}
+
+/* Smooth transitions for theme */
+* {
+  @apply transition-colors duration-200;
+}
