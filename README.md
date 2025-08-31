@@ -216,8 +216,8 @@ This project addresses the critical need for cost-effective multi-cloud strategi
 
 ## 👥 Team
 
-- **Bibhudh Nepal (22BCE3873)** - Frontend & Backend Development
-- **Aaryan Shrestha (22BCE3781)** - Research & Algorithm Implementation
+- **Aaryan Shrestha (22BCE3781)** - Frontend & Backend Development
+- **Bibhudh Nepal (22BCE3873)** - Research & Algorithm Implementation
 
 ## 📄 License
 
