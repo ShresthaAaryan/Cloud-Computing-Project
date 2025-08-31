@@ -13,6 +13,7 @@ export default function Calculator() {
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mixMode, setMixMode] = useState(false);
+  const [pricingStatus, setPricingStatus] = useState({ source: 'API', lastUpdated: null });
   const [computeFrom, setComputeFrom] = useState("");
   const [storageFrom, setStorageFrom] = useState("");
   const [dataFrom, setDataFrom] = useState("");
@@ -28,6 +29,10 @@ export default function Calculator() {
       const data = await res.json();
       setResults(data.results || []);
       setRecommendation(data.recommendation || null);
+      setPricingStatus({ source: 'Real-time API', lastUpdated: new Date().toLocaleTimeString() });
+    } catch (error) {
+      console.error('Error fetching pricing:', error);
+      setPricingStatus({ source: 'Fallback Data', lastUpdated: new Date().toLocaleTimeString() });
     } finally {
       setLoading(false);
     }
@@ -70,6 +75,11 @@ export default function Calculator() {
       <h1 className="text-3xl font-bold mb-6">Cost Calculator</h1>
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-1 space-y-4 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-600 dark:text-neutral-400">
+              Pricing: {pricingStatus.source} • Updated: {pricingStatus.lastUpdated || 'Never'}
+            </span>
+          </div>
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Mix and match providers</label>
             <input type="checkbox" checked={mixMode} onChange={(e) => setMixMode(e.target.checked)} />

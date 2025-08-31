@@ -14,9 +14,8 @@ export default function About() {
       <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <h2 className="font-semibold mb-2">Team</h2>
         <ul className="list-disc pl-5 text-sm text-gray-700 dark:text-neutral-300 space-y-1">
-          <li>Member 1 – Frontend</li>
-          <li>Member 2 – Backend</li>
-          <li>Member 3 – Research</li>
+          <li>Bibhudh Nepal (22BCE3873) – Frontend & Backend Development</li>
+          <li>Aaryan Shrestha (22BCE3781) – Research & Algorithm Implementation</li>
         </ul>
       </div>
     </section>

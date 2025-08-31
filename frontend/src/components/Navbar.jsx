@@ -20,6 +20,7 @@ export default function Navbar() {
         <div className="flex items-center gap-6">
           <NavLink to="/" className={({isActive}) => isActive ? "text-blue-600" : "text-gray-600 dark:text-neutral-300"}>Home</NavLink>
           <NavLink to="/calculator" className={({isActive}) => isActive ? "text-blue-600" : "text-gray-600 dark:text-neutral-300"}>Calculator</NavLink>
+          <NavLink to="/methodology" className={({isActive}) => isActive ? "text-blue-600" : "text-gray-600 dark:text-neutral-300"}>Methodology</NavLink>
           <NavLink to="/research" className={({isActive}) => isActive ? "text-blue-600" : "text-gray-600 dark:text-neutral-300"}>Research</NavLink>
           <NavLink to="/about" className={({isActive}) => isActive ? "text-blue-600" : "text-gray-600 dark:text-neutral-300"}>About</NavLink>
           <button onClick={() => setDark(!dark)} className="ml-2 px-3 py-1 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm">
