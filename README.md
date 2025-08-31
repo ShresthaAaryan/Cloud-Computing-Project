@@ -236,5 +236,3 @@ The application is optimized for:
 - **Cross-platform compatibility** (desktop and mobile)
 
 ---
-
-*Built with ❤️ for advancing multi-cloud cost optimization research*
