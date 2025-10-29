@@ -99,44 +99,67 @@ export default function Methodology() {
       </div>
 
       <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-        <h2 className="font-semibold mb-4">Real-Time API Integration</h2>
+        <h2 className="font-semibold mb-4">Live Pricing Sources & Caching</h2>
         <div className="space-y-4 text-sm text-gray-700 dark:text-neutral-300">
-          <p>
-            Our system integrates with official cloud provider APIs to fetch real-time pricing data:
-          </p>
+          <p>We fetch prices directly from official public sources and normalize them:</p>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">AWS Pricing API</h3>
+              <h3 className="font-medium mb-2">AWS (no key)</h3>
               <ul className="list-disc pl-4 text-xs space-y-1">
-                <li>EC2 instance pricing</li>
-                <li>S3 storage rates</li>
-                <li>Data transfer costs</li>
+                <li>EC2 On‑Demand: AWS Price List JSON (per region)</li>
+                <li>S3 Standard: AWS Price List JSON</li>
+                <li>Egress: conservative regional defaults</li>
               </ul>
             </div>
             <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">Azure Pricing API</h3>
+              <h3 className="font-medium mb-2">Azure (no key)</h3>
               <ul className="list-disc pl-4 text-xs space-y-1">
-                <li>Virtual machine pricing</li>
-                <li>Blob storage rates</li>
-                <li>Network egress costs</li>
+                <li>Retail Prices API: VM hourly rates by region/SKU</li>
+                <li>Blob Standard + egress: normalized defaults</li>
               </ul>
             </div>
             <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
-              <h3 className="font-medium mb-2">GCP Pricing API</h3>
+              <h3 className="font-medium mb-2">GCP (API key)</h3>
               <ul className="list-disc pl-4 text-xs space-y-1">
-                <li>Compute Engine pricing</li>
-                <li>Cloud Storage rates</li>
-                <li>Network pricing</li>
+                <li>Cloud Billing Catalog: sums per‑core + per‑GB RAM</li>
+                <li>Requires GCP_API_KEY; otherwise falls back</li>
               </ul>
             </div>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Caching Strategy</h3>
-            <p className="text-xs">
-              Pricing data is cached for 1 hour to reduce API calls and improve performance.
-              Cache can be cleared via API endpoint to force fresh data retrieval.
-            </p>
+            <h3 className="font-medium mb-2">Cache & Fresh Fetch</h3>
+            <ul className="list-disc pl-4 text-xs space-y-1">
+              <li>1‑hour in‑memory cache per provider/region/instance</li>
+              <li>“Force refresh prices” toggle bypasses cache</li>
+              <li>Cache endpoint: POST /pricing/cache/clear</li>
+            </ul>
           </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <h2 className="font-semibold mb-4">Provider-Specific Mapping</h2>
+        <div className="space-y-4 text-sm text-gray-700 dark:text-neutral-300">
+          <p>
+            To avoid cross‑cloud input mismatches, generic inputs are translated per provider:
+          </p>
+          <ul className="list-disc pl-5 text-xs space-y-1">
+            <li>AWS defaults: region <span className="font-mono">us-east-1</span>, instance <span className="font-mono">m5.large</span></li>
+            <li>Azure defaults: region <span className="font-mono">eastus</span>, SKU <span className="font-mono">D2s v3</span></li>
+            <li>GCP defaults: region <span className="font-mono">us-central1</span>, machine <span className="font-mono">e2-standard-2</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <h2 className="font-semibold mb-4">Visualization & Recommendations</h2>
+        <div className="space-y-4 text-sm text-gray-700 dark:text-neutral-300">
+          <ul className="list-disc pl-5 text-xs space-y-1">
+            <li>Total cost bar chart per provider</li>
+            <li>Stacked breakdown bars: compute, storage, data</li>
+            <li>Rate radar: normalized per‑metric price comparison</li>
+            <li>Server and client “mixed” strategy comparisons</li>
+          </ul>
         </div>
       </div>
 

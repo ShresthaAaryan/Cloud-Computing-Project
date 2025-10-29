@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 
 export default function Calculator() {
   const [provider, setProvider] = useState("");
@@ -14,22 +14,25 @@ export default function Calculator() {
   const [loading, setLoading] = useState(false);
   const [mixMode, setMixMode] = useState(false);
   const [pricingStatus, setPricingStatus] = useState({ source: 'API', lastUpdated: null });
+  const [forceRefresh, setForceRefresh] = useState(false);
   const [computeFrom, setComputeFrom] = useState("");
   const [storageFrom, setStorageFrom] = useState("");
   const [dataFrom, setDataFrom] = useState("");
+  const [showRateRadar, setShowRateRadar] = useState(true);
+  const [showBreakdownBars, setShowBreakdownBars] = useState(true);
 
   const handleCompare = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/compare", {
+      const res = await fetch("/api/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, region, serviceType, instanceSize, computeHours, storageGB, dataGB }),
+        body: JSON.stringify({ provider, region, serviceType, instanceSize, computeHours, storageGB, dataGB, fresh: forceRefresh }),
       });
       const data = await res.json();
       setResults(data.results || []);
       setRecommendation(data.recommendation || null);
-      setPricingStatus({ source: 'Real-time API', lastUpdated: new Date().toLocaleTimeString() });
+      setPricingStatus({ source: forceRefresh ? 'Forced Real-time API' : 'Real-time API', lastUpdated: new Date().toLocaleTimeString() });
     } catch (error) {
       console.error('Error fetching pricing:', error);
       setPricingStatus({ source: 'Fallback Data', lastUpdated: new Date().toLocaleTimeString() });
@@ -70,6 +73,39 @@ export default function Calculator() {
     return base;
   }, [results, mixedPlan, serverMixed]);
 
+  const breakdownBarData = useMemo(() => {
+    return results.map(r => ({
+      name: r.provider,
+      Compute: Number(r.breakdown.compute.toFixed(4)),
+      Storage: Number(r.breakdown.storage.toFixed(4)),
+      Data: Number(r.breakdown.data.toFixed(4))
+    }));
+  }, [results]);
+
+  const rateRadarData = useMemo(() => {
+    if (!results.length) return [];
+    const computeRates = results.map(r => r.rates?.compute ?? 0).filter(n => n > 0);
+    const storageRates = results.map(r => r.rates?.storage ?? 0).filter(n => n > 0);
+    const dataRates = results.map(r => r.rates?.data ?? 0).filter(n => n > 0);
+    const minCompute = Math.min(...computeRates);
+    const minStorage = Math.min(...storageRates);
+    const minData = Math.min(...dataRates);
+    const providers = results.map(r => r.provider);
+    const rows = [
+      { metric: 'Compute' },
+      { metric: 'Storage' },
+      { metric: 'Data' }
+    ];
+    providers.forEach(p => {
+      const r = results.find(x => x.provider === p);
+      if (!r) return;
+      rows[0][p] = minCompute > 0 ? Number((minCompute / (r.rates?.compute || minCompute)).toFixed(3)) : 1;
+      rows[1][p] = minStorage > 0 ? Number((minStorage / (r.rates?.storage || minStorage)).toFixed(3)) : 1;
+      rows[2][p] = minData > 0 ? Number((minData / (r.rates?.data || minData)).toFixed(3)) : 1;
+    });
+    return rows;
+  }, [results]);
+
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6">Cost Calculator</h1>
@@ -79,6 +115,10 @@ export default function Calculator() {
             <span className="text-xs text-gray-600 dark:text-neutral-400">
               Pricing: {pricingStatus.source} • Updated: {pricingStatus.lastUpdated || 'Never'}
             </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Force refresh prices</label>
+            <input type="checkbox" checked={forceRefresh} onChange={(e) => setForceRefresh(e.target.checked)} />
           </div>
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Mix and match providers</label>
@@ -219,19 +259,59 @@ export default function Calculator() {
             )}
           </div>
           <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <h2 className="font-semibold mb-4">Visualization</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Visualization</h2>
+              <div className="flex items-center gap-4 text-sm">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={showBreakdownBars} onChange={e => setShowBreakdownBars(e.target.checked)} /> Breakdown bars</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={showRateRadar} onChange={e => setShowRateRadar(e.target.checked)} /> Rate radar</label>
+              </div>
+            </div>
             {results.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-neutral-400">Run a comparison to see the chart.</p>
             ) : (
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="total" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="total" name="Total" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {showBreakdownBars && (
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={breakdownBarData}>
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="Compute" stackId="a" fill="#3b82f6" />
+                        <Bar dataKey="Storage" stackId="a" fill="#10b981" />
+                        <Bar dataKey="Data" stackId="a" fill="#f59e0b" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                {showRateRadar && (
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={rateRadarData}>
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="metric" />
+                        <PolarRadiusAxis angle={30} domain={[0, 1]} />
+                        {results.map((r, idx) => (
+                          <Radar key={r.provider} name={r.provider} dataKey={r.provider} stroke={['#3b82f6', '#10b981', '#f59e0b'][idx % 3]} fill={['#3b82f6', '#10b981', '#f59e0b'][idx % 3]} fillOpacity={0.25} />
+                        ))}
+                        <Legend />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
             )}
           </div>

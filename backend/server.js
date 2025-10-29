@@ -16,12 +16,13 @@ const REGIONAL_PRICING = {
 };
 
 // Enhanced cost calculation with real-time API pricing and regional adjustments
-async function calculateCosts({ computeHours, storageGB, dataGB, region = 'default', instanceSize = 'm5.large' }) {
-  const regionalMultipliers = REGIONAL_PRICING[region] || REGIONAL_PRICING.default;
+async function calculateCosts({ computeHours, storageGB, dataGB, region = 'default', instanceSize = 'm5.large', fresh = false }) {
+  const effectiveRegion = !region || region === 'default' ? 'us-east-1' : region;
+  const regionalMultipliers = REGIONAL_PRICING[effectiveRegion] || REGIONAL_PRICING.default;
 
   try {
     // Get real-time pricing from APIs
-    const pricingData = await pricingService.getAllPricing(region, instanceSize);
+    const pricingData = await pricingService.getAllPricing(effectiveRegion, instanceSize || 'm5.large', { fresh });
 
     return Object.keys(pricingData).map((provider) => {
       const baseRates = pricingData[provider];
@@ -40,7 +41,7 @@ async function calculateCosts({ computeHours, storageGB, dataGB, region = 'defau
 
       return {
         provider,
-        region: region === 'default' ? 'us-east-1' : region,
+        region: effectiveRegion,
         instanceSize,
         breakdown: {
           compute: parseFloat(computeCost.toFixed(4)),
@@ -178,6 +179,7 @@ app.post("/compare", async (req, res) => {
     computeHours,
     storageGB,
     dataGB,
+    fresh,
   } = req.body;
 
   // Validate input
@@ -193,7 +195,7 @@ app.post("/compare", async (req, res) => {
 
   try {
     // Calculate costs with real-time API pricing
-    let results = await calculateCosts({ computeHours, storageGB, dataGB, region, instanceSize });
+    let results = await calculateCosts({ computeHours, storageGB, dataGB, region, instanceSize, fresh: Boolean(fresh) });
     if (provider) {
       results = results.filter((r) => r.provider === provider);
       if (results.length === 0) {
