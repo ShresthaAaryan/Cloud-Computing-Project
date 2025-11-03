@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ComposedChart, Scatter, ReferenceLine, LabelList, Cell } from "recharts";
 
 export default function Calculator() {
   const [provider, setProvider] = useState("");
@@ -20,6 +20,7 @@ export default function Calculator() {
   const [dataFrom, setDataFrom] = useState("");
   const [showRateRadar, setShowRateRadar] = useState(true);
   const [showBreakdownBars, setShowBreakdownBars] = useState(true);
+  const [showSavingsBars, setShowSavingsBars] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [useCustomRegion, setUseCustomRegion] = useState(false);
   const [useCustomInstance, setUseCustomInstance] = useState(false);
@@ -92,6 +93,17 @@ export default function Calculator() {
       Data: Number(r.breakdown.data.toFixed(4))
     }));
   }, [results]);
+
+  const savingsBarData = useMemo(() => {
+    if (!results.length) return [];
+    const mixedTotal = (mixMode && mixedPlan) ? mixedPlan.total : (serverMixed ? serverMixed.total : null);
+    const candidateTotals = results.map(r => r.total);
+    if (mixedTotal != null) candidateTotals.push(mixedTotal);
+    const bestTotal = Math.min(...candidateTotals);
+    const baseRows = results.map(r => ({ name: r.provider, delta: Number((r.total - bestTotal).toFixed(4)), kind: 'provider' }));
+    if (mixedTotal != null) baseRows.push({ name: 'Mixed', delta: Number((mixedTotal - bestTotal).toFixed(4)), kind: 'mixed' });
+    return baseRows.sort((a, b) => a.delta - b.delta);
+  }, [results, mixMode, mixedPlan, serverMixed]);
 
   const rateRadarData = useMemo(() => {
     if (!results.length) return [];
@@ -359,6 +371,7 @@ export default function Calculator() {
               <div className="flex items-center gap-4 text-sm">
                 <label className="flex items-center gap-2"><input type="checkbox" checked={showBreakdownBars} onChange={e => setShowBreakdownBars(e.target.checked)} /> Breakdown bars</label>
                 <label className="flex items-center gap-2"><input type="checkbox" checked={showRateRadar} onChange={e => setShowRateRadar(e.target.checked)} /> Rate radar</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={showSavingsBars} onChange={e => setShowSavingsBars(e.target.checked)} /> Savings vs Best</label>
               </div>
             </div>
             {results.length === 0 ? (
@@ -404,6 +417,31 @@ export default function Calculator() {
                         <Legend />
                         <Tooltip />
                       </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                {showSavingsBars && (
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={savingsBarData} layout="vertical">
+                        <XAxis type="number" tickFormatter={(v) => `$${v}`} domain={[0, 'dataMax']} />
+                        <YAxis type="category" dataKey="name" width={100} />
+                        <Tooltip formatter={(v) => [`$${Number(v).toFixed(4)}`, 'Delta vs Best']} />
+                        <ReferenceLine x={0} stroke="#e5e7eb" />
+                        {/* Lollipop stem */}
+                        <Bar dataKey="delta" barSize={6} name="Delta vs Best" fill="#cbd5e1" radius={[0, 6, 6, 0]}>
+                          <LabelList dataKey="delta" position="right" formatter={(v) => `$${Number(v).toFixed(4)}`} className="fill-current text-xs" />
+                          {savingsBarData.map((row, idx) => (
+                            <Cell key={`stem-${idx}`} fill={row.delta === 0 ? '#10b981' : (row.kind === 'mixed' ? '#3b82f6' : '#cbd5e1')} />
+                          ))}
+                        </Bar>
+                        {/* Lollipop head */}
+                        <Scatter dataKey="delta">
+                          {savingsBarData.map((row, idx) => (
+                            <Cell key={`dot-${idx}`} fill={row.delta === 0 ? '#10b981' : (row.kind === 'mixed' ? '#3b82f6' : '#ef4444')} />
+                          ))}
+                        </Scatter>
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 )}

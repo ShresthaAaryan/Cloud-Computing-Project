@@ -1,4 +1,12 @@
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
+
 export default function Methodology() {
+  const sampleBreakdown = [
+    { name: 'AWS', Compute: 0.58, Storage: 1.15, Data: 0.45, Total: 2.18 },
+    { name: 'Azure', Compute: 0.60, Storage: 1.20, Data: 0.43, Total: 2.23 },
+    { name: 'GCP', Compute: 0.50, Storage: 1.00, Data: 0.40, Total: 1.90 },
+    { name: 'Mixed', Compute: 0.50, Storage: 1.00, Data: 0.40, Total: 1.90 },
+  ];
   return (
     <section className="space-y-6">
       <h1 className="text-3xl font-bold mb-6">Methodology & Algorithms</h1>
@@ -16,6 +24,46 @@ export default function Methodology() {
             <p className="font-mono text-xs">
               Total Cost = (Compute Hours × Compute Rate) + (Storage GB × Storage Rate) + (Data GB × Data Transfer Rate)
             </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">Concept Visualization</h2>
+          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Illustrative</span>
+        </div>
+        <p className="text-sm text-gray-700 dark:text-neutral-300 mb-4">Example breakdown of compute, storage, and data transfer costs across providers, including a mixed strategy.</p>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={sampleBreakdown}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="Compute" stackId="a" fill="#3b82f6" />
+                <Bar dataKey="Storage" stackId="a" fill="#10b981" />
+                <Bar dataKey="Data" stackId="a" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-3 text-sm text-gray-700 dark:text-neutral-300">
+            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
+              <div className="font-medium mb-1">Reading the chart</div>
+              <ul className="list-disc pl-4 text-xs space-y-1">
+                <li>Bars show the cost composition per provider</li>
+                <li>“Mixed” combines the cheapest compute, storage, and data</li>
+                <li>Total equals the sum of stacked segments</li>
+              </ul>
+            </div>
+            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
+              <div className="font-medium mb-1">Assumptions</div>
+              <ul className="list-disc pl-4 text-xs space-y-1">
+                <li>Illustrative values for demonstration only</li>
+                <li>Actual pricing depends on region, instance size, and data tiers</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
