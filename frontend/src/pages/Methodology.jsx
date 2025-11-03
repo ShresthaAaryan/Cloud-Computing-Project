@@ -132,8 +132,44 @@ export default function Methodology() {
               <li>1‑hour in‑memory cache per provider/region/instance</li>
               <li>“Force refresh prices” toggle bypasses cache</li>
               <li>Cache endpoint: POST /pricing/cache/clear</li>
+              <li>Fast‑path: if no valid cache and no force refresh, we return fallback instantly</li>
             </ul>
           </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <h2 className="font-semibold mb-4">Regional Handling & Presets</h2>
+        <div className="space-y-4 text-sm text-gray-700 dark:text-neutral-300">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Region</h3>
+              <ul className="list-disc pl-4 text-xs space-y-1">
+                <li>Presets: us‑east‑1, us‑west‑2, eu‑west‑1, ap‑southeast‑1</li>
+                <li>Custom: accepts any provider region code</li>
+                <li>Fallback mode applies light regional multipliers when live rates aren’t used</li>
+              </ul>
+            </div>
+            <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Instance Size</h3>
+              <ul className="list-disc pl-4 text-xs space-y-1">
+                <li>Presets: AWS m5.large/t3.medium, Azure D2s v3/B2s, GCP e2‑standard‑2/n1‑standard‑2</li>
+                <li>Custom: accepts any instance/SKU name</li>
+                <li>Inputs are mapped per provider to avoid mismatches (e.g., EC2 vs Azure SKU vs GCP machine)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <h2 className="font-semibold mb-4">Timeout & Fallback Policy</h2>
+        <div className="space-y-4 text-sm text-gray-700 dark:text-neutral-300">
+          <ul className="list-disc pl-5 text-xs space-y-1">
+            <li>Live provider calls use a short timeout (default 4s; configurable)</li>
+            <li>On timeout or error, we fall back to normalized static rates</li>
+            <li>When “Force refresh prices” is off, we skip live calls if cache is cold to keep UX instant</li>
+          </ul>
         </div>
       </div>
 

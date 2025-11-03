@@ -14,7 +14,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white/70 dark:bg-neutral-900/70 backdrop-blur border-b border-neutral-200 dark:border-neutral-800">
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-extrabold text-xl">
-          <span>🌥️</span>
+          <img src="/logo.png" alt="Logo" className="w-8 h-8" />
           <span>Multi-Cloud Cost</span>
         </Link>
         <div className="flex items-center gap-6">
