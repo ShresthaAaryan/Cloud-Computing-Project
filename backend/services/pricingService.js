@@ -5,14 +5,25 @@ class PricingService {
   constructor() {
     this.cache = new Map();
     this.cacheTimeout = 3600000; // 1 hour cache
+    this.http = axios.create({
+      timeout: Number(process.env.PRICING_HTTP_TIMEOUT_MS || 4000),
+      headers: {
+        'User-Agent': 'multi-cloud-price-calculator/1.0 (+https://example)'
+      },
+      validateStatus: (status) => status >= 200 && status < 500 // treat 5xx as errors
+    });
   }
 
   // Get cached data or fetch new data
   async getCachedOrFetch(key, fetchFunction, options = {}) {
     const { fresh = false } = options;
     const cached = this.cache.get(key);
-    if (!fresh && cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-      return cached.data;
+    if (!fresh) {
+      if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+        return cached.data;
+      }
+      // No fresh requested and no valid cache: return fallback immediately (fast UX)
+      return this.getFallbackPricing(key);
     }
 
     try {
@@ -40,15 +51,15 @@ class PricingService {
         const s3IndexUrl = `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/index.json`;
         let ec2Resp;
         try {
-          ec2Resp = await axios.get(ec2IndexUrl);
+          ec2Resp = await this.http.get(ec2IndexUrl);
         } catch (e) {
           if (e?.response?.status === 404 && effectiveRegion !== 'us-east-1') {
-            ec2Resp = await axios.get(`https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/us-east-1/index.json`);
+            ec2Resp = await this.http.get(`https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/us-east-1/index.json`);
           } else {
             throw e;
           }
         }
-        const s3Resp = await axios.get(s3IndexUrl);
+        const s3Resp = await this.http.get(s3IndexUrl);
         const computeRate = this.extractAWSComputeRate(ec2Resp.data, instanceType, effectiveRegion);
         const storageRate = this.extractAWSStorageRate(s3Resp.data, effectiveRegion);
         const dataTransferRate = this.getAWSDataTransferRate(effectiveRegion);
@@ -66,7 +77,7 @@ class PricingService {
 
     return this.getCachedOrFetch(cacheKey, async () => {
       try {
-        const resp = await axios.get('https://prices.azure.com/api/retail/prices', {
+        const resp = await this.http.get('https://prices.azure.com/api/retail/prices', {
           params: {
             '$filter': `serviceName eq 'Virtual Machines' and armRegionName eq '${region}' and skuName eq '${instanceType}' and priceType eq 'Consumption'`,
             '$top': 1
@@ -91,7 +102,7 @@ class PricingService {
       try {
         const apiKey = process.env.GCP_API_KEY;
         if (!apiKey) throw new Error('GCP API key not configured');
-        const resp = await axios.get('https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus', { params: { key: apiKey } });
+        const resp = await this.http.get('https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus', { params: { key: apiKey } });
         const computeRate = this.extractGCPComputeRate(resp.data, instanceType, region);
         const storageRate = this.getGCPStorageRate(region);
         const dataTransferRate = this.getGCPDataTransferRate(region);

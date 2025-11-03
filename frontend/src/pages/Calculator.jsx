@@ -20,21 +20,32 @@ export default function Calculator() {
   const [dataFrom, setDataFrom] = useState("");
   const [showRateRadar, setShowRateRadar] = useState(true);
   const [showBreakdownBars, setShowBreakdownBars] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [useCustomRegion, setUseCustomRegion] = useState(false);
+  const [useCustomInstance, setUseCustomInstance] = useState(false);
+
+  const API_BASE = (import.meta?.env?.VITE_API_BASE ?? "/api").replace(/\/$/, "");
 
   const handleCompare = async () => {
     setLoading(true);
+    setErrorMessage("");
     try {
-      const res = await fetch("/api/compare", {
+      const res = await fetch(`${API_BASE}/compare`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider, region, serviceType, instanceSize, computeHours, storageGB, dataGB, fresh: forceRefresh }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err?.error || `Request failed with status ${res.status}`);
+      }
       const data = await res.json();
       setResults(data.results || []);
       setRecommendation(data.recommendation || null);
       setPricingStatus({ source: forceRefresh ? 'Forced Real-time API' : 'Real-time API', lastUpdated: new Date().toLocaleTimeString() });
     } catch (error) {
       console.error('Error fetching pricing:', error);
+      setErrorMessage(error?.message || 'Failed to fetch pricing');
       setPricingStatus({ source: 'Fallback Data', lastUpdated: new Date().toLocaleTimeString() });
     } finally {
       setLoading(false);
@@ -136,7 +147,44 @@ export default function Calculator() {
             </div>
             <div>
               <label className="block text-sm mb-1">Region</label>
-              <input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="e.g., us-east-1" className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800" />
+              {!useCustomRegion ? (
+                <select
+                  value={region || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__custom__') {
+                      setUseCustomRegion(true);
+                      setRegion('');
+                    } else {
+                      setRegion(val);
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800"
+                >
+                  <option value="">Auto (default)</option>
+                  <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                  <option value="us-west-2">us-west-2 (Oregon)</option>
+                  <option value="eu-west-1">eu-west-1 (Ireland)</option>
+                  <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+                  <option value="__custom__">Other (custom)...</option>
+                </select>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    placeholder="Enter region code (e.g., us-east-1)"
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomRegion(false)}
+                    className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                  >
+                    Presets
+                  </button>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm mb-1">Service Type</label>
@@ -149,7 +197,49 @@ export default function Calculator() {
             </div>
             <div>
               <label className="block text-sm mb-1">Instance Size</label>
-              <input value={instanceSize} onChange={(e) => setInstanceSize(e.target.value)} placeholder="e.g., m5.large" className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800" />
+              {!useCustomInstance ? (
+                <select
+                  value={instanceSize || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '__custom__') {
+                      setUseCustomInstance(true);
+                      setInstanceSize('');
+                    } else {
+                      setInstanceSize(val);
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800"
+                >
+                  <option value="">Auto (default)</option>
+                  {/* AWS presets */}
+                  <option value="m5.large">AWS: m5.large</option>
+                  <option value="t3.medium">AWS: t3.medium</option>
+                  {/* Azure presets */}
+                  <option value="D2s v3">Azure: D2s v3</option>
+                  <option value="B2s">Azure: B2s</option>
+                  {/* GCP presets */}
+                  <option value="e2-standard-2">GCP: e2-standard-2</option>
+                  <option value="n1-standard-2">GCP: n1-standard-2</option>
+                  <option value="__custom__">Other (custom)...</option>
+                </select>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={instanceSize}
+                    onChange={(e) => setInstanceSize(e.target.value)}
+                    placeholder="Enter instance type (e.g., m5.large)"
+                    className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setUseCustomInstance(false)}
+                    className="px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700"
+                  >
+                    Presets
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           {mixMode && (
@@ -200,6 +290,11 @@ export default function Calculator() {
           </button>
         </div>
         <div className="md:col-span-2 space-y-6">
+          {errorMessage && (
+            <div className="p-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-200 text-sm">
+              {errorMessage}
+            </div>
+          )}
           {recommendation && (
             <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
               {recommendation?.chosen?.type === 'single' ? (
